@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BookIt - Booking &amp; Invoicing</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>BookIt</h1>
+    <nav id="nav" hidden>
+      <button data-tab="services" class="active">Services</button>
+      <button data-tab="bookings">My bookings</button>
+      <button data-tab="invoices">Invoices</button>
+      <span id="who"></span>
+      <button id="logout" class="ghost">Log out</button>
+    </nav>
+  </header>
+
+  <div id="toast" role="status" hidden></div>
+
+  <main>
+    <section id="auth">
+      <div class="card">
+        <h2 id="auth-title">Log in</h2>
+        <form id="auth-form">
+          <label id="name-row" hidden>Full name <input id="fullName" autocomplete="name"></label>
+          <label>Email <input id="email" type="email" required autocomplete="email" value="demo@bookit.test"></label>
+          <label>Password <input id="password" type="password" required minlength="8" autocomplete="current-password" value="Demo#12345"></label>
+          <button type="submit" id="auth-submit">Log in</button>
+        </form>
+        <p class="muted"><a href="#" id="toggle-auth">Need an account? Register</a></p>
+        <p class="muted small">Demo login is pre-filled: demo@bookit.test / Demo#12345</p>
+      </div>
+    </section>
+
+    <section id="tab-services" class="tab" hidden>
+      <h2>Services</h2>
+      <div id="services" class="grid"></div>
+      <div class="card" id="book-card" hidden>
+        <h3>Book: <span id="book-service-name"></span></h3>
+        <form id="book-form">
+          <label>Start time (your local time) <input id="book-start" type="datetime-local" required></label>
+          <label>Notes <input id="book-notes" maxlength="200"></label>
+          <button type="submit">Confirm booking</button>
+          <button type="button" class="ghost" id="book-cancel">Close</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-bookings" class="tab" hidden>
+      <h2>My bookings</h2>
+      <table><thead><tr><th>Service</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
+        <tbody id="bookings"></tbody></table>
+    </section>
+
+    <section id="tab-invoices" class="tab" hidden>
+      <h2>Invoices</h2>
+      <div id="invoices" class="grid"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

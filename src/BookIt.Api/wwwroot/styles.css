@@ -1,0 +1,31 @@
+:root { --bg:#f5f7fb; --fg:#1d2433; --muted:#6b7488; --brand:#4f46e5; --ok:#15803d; --bad:#b91c1c; --card:#fff; --line:#e3e7ef; }
+* { box-sizing: border-box; }
+body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--fg); }
+header { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:12px 24px; background:var(--card); border-bottom:1px solid var(--line); }
+header h1 { margin:0; font-size:20px; color:var(--brand); }
+nav { display:flex; flex-wrap:wrap; align-items:center; gap:8px; flex:1; }
+nav #who { margin-left:auto; color:var(--muted); }
+main { max-width:960px; margin:24px auto; padding:0 16px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin:12px 0; }
+#auth .card { max-width:380px; margin:48px auto; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.grid .card { margin:0; }
+label { display:block; margin:10px 0; font-weight:600; font-size:13px; }
+input { display:block; width:100%; margin-top:4px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+button { padding:8px 14px; border:0; border-radius:6px; background:var(--brand); color:#fff; font:inherit; cursor:pointer; }
+button.ghost { background:transparent; color:var(--brand); border:1px solid var(--brand); }
+nav button:not(.ghost) { background:transparent; color:var(--fg); }
+nav button.active { background:var(--brand); color:#fff; }
+button.pay { background:var(--ok); }
+button.danger { background:var(--bad); }
+button:disabled { opacity:.5; cursor:default; }
+table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+.muted { color:var(--muted); } .small { font-size:12px; }
+.price { font-size:22px; font-weight:700; }
+.badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#e0e7ff; color:#3730a3; }
+.badge.paid { background:#dcfce7; color:var(--ok); } .badge.unpaid { background:#fee2e2; color:var(--bad); }
+.inv-lines { width:100%; margin:8px 0; font-size:13px; } .inv-lines td { border:0; padding:2px 0; }
+.total { font-weight:700; border-top:1px solid var(--line); padding-top:6px; display:flex; justify-content:space-between; }
+#toast { position:fixed; right:16px; bottom:16px; padding:10px 16px; border-radius:8px; background:var(--fg); color:#fff; max-width:320px; }
+#toast.err { background:var(--bad); }
