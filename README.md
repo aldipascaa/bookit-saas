@@ -2,6 +2,8 @@
 
 A small full-stack SaaS for **booking appointments and invoicing customers**, built with ASP.NET Core 8, EF Core (SQLite), JWT auth and a no-build vanilla JS frontend.
 
+Current version: **1.0.0** (see [CHANGELOG.md](CHANGELOG.md)).
+
 ## Features
 
 - Register / login with hashed passwords (ASP.NET Identity `PasswordHasher`) and JWT bearer authentication
@@ -11,8 +13,32 @@ A small full-stack SaaS for **booking appointments and invoicing customers**, bu
 - **Mock** payment endpoint to mark an invoice paid (no payment provider, no keys, no card data)
 - SQLite database auto-created and seeded with demo data on startup
 - Swagger UI in Development
-- Plain HTML/CSS/JS frontend in `wwwroot` (login/register, services, bookings, invoices, pay)
+- Plain HTML/CSS/JS frontend in `wwwroot` (no build step, no CDN): login/register, services, bookings, invoices, pay
+  - light and dark mode, responsive down to phone width
+  - date/time picker with end-time preview, status badges (Confirmed / Cancelled, Paid / Unpaid), invoice detail view
+  - loading skeletons, empty states, inline validation, friendly toasts for slot conflicts (409) and declined payments (402)
+  - accessible: labels, focus styles, skip link, keyboard-usable native dialogs
 - xUnit tests (unit + in-memory SQLite + `WebApplicationFactory` integration tests)
+
+## Screenshots
+
+Captured from the running app with headless Edge.
+
+| Login (inline validation) | Services |
+|---|---|
+| ![Login](docs/screenshots/login.png) | ![Services](docs/screenshots/services.png) |
+
+| Booking dialog | Double-booking rejected |
+|---|---|
+| ![Booking dialog](docs/screenshots/booking-dialog.png) | ![Double booking](docs/screenshots/double-booking.png) |
+
+| Invoice detail | Dark mode |
+|---|---|
+| ![Invoice detail](docs/screenshots/invoice-detail.png) | ![Invoices, dark](docs/screenshots/invoices-dark.png) |
+
+Mobile (375 px wide):
+
+![Mobile bookings](docs/screenshots/mobile-bookings.png)
 
 ## Architecture
 
