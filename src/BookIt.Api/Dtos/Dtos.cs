@@ -36,9 +36,9 @@ public record LineItemDto(string Description, int Quantity, decimal UnitPrice, d
 public record InvoiceDto(int Id, string Number, int BookingId, DateTime IssuedAt, IReadOnlyList<LineItemDto> LineItems,
     decimal Total, bool IsPaid, DateTime? PaidAt, string? PaymentReference)
 {
-    public static InvoiceDto From(Invoice i) => new(i.Id, i.Number, i.BookingId, i.IssuedAt,
+    public static InvoiceDto From(Invoice i) => new(i.Id, i.Number, i.BookingId, DateTime.SpecifyKind(i.IssuedAt, DateTimeKind.Utc),
         i.LineItems.Select(l => new LineItemDto(l.Description, l.Quantity, l.UnitPrice, l.LineTotal)).ToList(),
-        i.Total, i.IsPaid, i.PaidAt, i.PaymentReference);
+        i.Total, i.IsPaid, i.PaidAt is { } p ? DateTime.SpecifyKind(p, DateTimeKind.Utc) : null, i.PaymentReference);
 }
 
 /// <summary>Mock payment: no card data is accepted or stored. Set Succeed=false to simulate a decline.</summary>
