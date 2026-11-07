@@ -2,6 +2,36 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/), versioning follows [SemVer](https://semver.org/).
 
+## [1.1.0] - 2026-11-08
+
+Architecture review release; see [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for findings and rationale.
+
+### Added
+- **Roles**: `Admin` and `Customer` (JWT role claim, `role` in auth responses). Only Admins can create, update or delete services; public registration always creates Customers. Demo admin `admin@bookit.test` is seeded in Development; production admins are provisioned via `Seed:AdminEmail` / `Seed:AdminPassword`.
+- Minimal admin UI in the frontend (add / edit / delete service).
+- **EF Core migrations** (`InitialCreate`, `AddBookingOverlapGuard`) applied automatically at startup; `dotnet-ef` pinned in `.config/dotnet-tools.json`.
+- **Database-level double-booking protection**: SQLite triggers reject overlapping non-cancelled bookings of the same service on insert and update.
+- Global exception handling with RFC 7807 ProblemDetails (typed application exceptions), stricter request validation, and indexes.
+- `/health` (with database check) and `/health/live` endpoints.
+- Per-IP rate limiting on `/api/auth/*`, security headers incl. a strict Content-Security-Policy, explicit CORS policy (closed unless `Cors:AllowedOrigins` is set), HSTS outside Development.
+- Options pattern with startup validation (`Jwt`, `Seed`, `RateLimiting`, `Cors`); `UserSecretsId` for local secrets.
+- Structured logging in use-case services; `TimeProvider` for testable time.
+- 39 new tests (60 total): roles, DB triggers, parallel booking races, concurrent payment, ProblemDetails/validation, health, headers, rate limiting, startup configuration.
+
+### Changed
+- Code reorganised into `Domain` / `Application` / `Infrastructure` / `Web` folders, one type per file, thin controllers, use-case services behind interfaces (`IAppDbContext`, `ITokenService`).
+- **API contract:** error bodies are now ProblemDetails (`detail`, `errors`) instead of `{ "error": ... }`; `/api/services` returns a `ServiceDto`; `?includeInactive=true` is honoured for Admins only.
+- Payment, invoice creation and registration are race-safe (conditional update / unique indexes mapped to `409`).
+- Version bumped to 1.1.0.
+
+### Removed
+- In-process `SemaphoreSlim` booking lock (superseded by the database guard).
+- Hardcoded JWT key from `appsettings.json`; the app now fails fast without a valid `Jwt:Key` (the committed dev-only key works in Development only).
+
+### Upgrade notes
+- Databases created by 1.0.0 (`EnsureCreated`) have no migration history or `Role` column: delete the old `bookit.db` and let 1.1.0 recreate it.
+- Set `Jwt__Key` (at least 32 chars) in any non-Development environment.
+
 ## [1.0.0] - 2026-11-07
 
 First stable release.
