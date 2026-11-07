@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6706E0C7-4A10-49F6-A259-1DA8C641A68D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookIt.Api", "src\BookIt.Api\BookIt.Api.csproj", "{127BA852-CD0C-4E33-8964-50CB8C556442}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B50DB36F-1F9D-470C-89A6-3788C9C2CA53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookIt.Tests", "tests\BookIt.Tests\BookIt.Tests.csproj", "{6F44826A-A90C-4F15-823C-7FE4C918DD58}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{127BA852-CD0C-4E33-8964-50CB8C556442}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{127BA852-CD0C-4E33-8964-50CB8C556442}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{127BA852-CD0C-4E33-8964-50CB8C556442}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{127BA852-CD0C-4E33-8964-50CB8C556442}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F44826A-A90C-4F15-823C-7FE4C918DD58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F44826A-A90C-4F15-823C-7FE4C918DD58}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F44826A-A90C-4F15-823C-7FE4C918DD58}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F44826A-A90C-4F15-823C-7FE4C918DD58}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{127BA852-CD0C-4E33-8964-50CB8C556442} = {6706E0C7-4A10-49F6-A259-1DA8C641A68D}
+		{6F44826A-A90C-4F15-823C-7FE4C918DD58} = {B50DB36F-1F9D-470C-89A6-3788C9C2CA53}
+	EndGlobalSection
+EndGlobal
