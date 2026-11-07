@@ -120,3 +120,4 @@ dialog::backdrop { background: rgba(10, 14, 26, .55); }
   .row-card .acts { width: 100%; }
   .auth-card { padding: 20px; }
 }
+.page-head .btn { margin-top: 10px; }

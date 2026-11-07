@@ -54,7 +54,7 @@
     </section>
 
     <section id="tab-services" class="tab" hidden aria-labelledby="h-services">
-      <div class="page-head"><h1 id="h-services">Services</h1><p class="muted">Pick a service and choose a time.</p></div>
+      <div class="page-head"><h1 id="h-services">Services</h1><p class="muted">Pick a service and choose a time.</p><button id="svc-add" class="btn sm" hidden>Add service</button></div>
       <div id="services" class="grid" aria-live="polite"></div>
     </section>
 
@@ -87,6 +87,36 @@
       <div class="actions">
         <button type="button" class="btn ghost" id="book-cancel">Close</button>
         <button type="submit" class="btn" id="book-submit">Confirm booking</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="svc-dialog" aria-labelledby="svc-title">
+    <form id="svc-form" novalidate>
+      <h2 id="svc-title">Add service</h2>
+      <div class="field">
+        <label for="svc-name">Name</label>
+        <input id="svc-name" maxlength="100" required>
+        <p class="err" id="svc-name-err" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="svc-desc">Description</label>
+        <input id="svc-desc" maxlength="500">
+      </div>
+      <div class="field">
+        <label for="svc-price">Price (USD)</label>
+        <input id="svc-price" type="number" min="0" step="0.01" required>
+        <p class="err" id="svc-price-err" role="alert"></p>
+      </div>
+      <div class="field">
+        <label for="svc-duration">Duration (minutes, 5-1440)</label>
+        <input id="svc-duration" type="number" min="5" max="1440" step="5" required>
+        <p class="err" id="svc-duration-err" role="alert"></p>
+      </div>
+      <div class="field"><label><input id="svc-active" type="checkbox" checked> Active (bookable)</label></div>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="svc-cancel">Close</button>
+        <button type="submit" class="btn" id="svc-submit">Save</button>
       </div>
     </form>
   </dialog>

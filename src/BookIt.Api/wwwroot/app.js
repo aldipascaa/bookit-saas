@@ -31,7 +31,9 @@ function toast(message, kind = "info", title = "") {
   setTimeout(close, kind === "error" ? 7000 : 4000);
 }
 function errorToast(e) {
-  if (e.status === 409) toast(e.message, "error", "Time slot unavailable");
+  if (e.status === 409) toast(e.message, "error", "Conflict");
+  else if (e.status === 403) toast("Only administrators can do that.", "error", "Not allowed");
+  else if (e.status === 429) toast("Too many attempts. Please wait a minute and try again.", "error", "Slow down");
   else if (e.status === 402) toast("The mock payment was declined. Nothing was charged - you can try again.", "error", "Payment declined");
   else toast(e.message || "Something went wrong.", "error");
 }
@@ -47,7 +49,7 @@ async function api(path, { method = "GET", body } = {}) {
   if (res.status === 401 && state.token) { logout(); throw new ApiError("Your session expired. Please log in again.", 401); }
   const data = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = data?.error || (data?.errors && Object.values(data.errors).flat()[0]) || data?.title || res.statusText || "Request failed";
+    const msg = (data?.errors && Object.values(data.errors).flat()[0]) || data?.detail || data?.error || data?.title || res.statusText || "Request failed";
     throw new ApiError(msg, res.status);
   }
   return data;
@@ -77,7 +79,7 @@ function showTab(name) {
   ({ services: loadServices, bookings: loadBookings, invoices: loadInvoices }[name])().catch(errorToast);
 }
 function setSession(auth) {
-  state.token = auth.token; state.user = { email: auth.email, fullName: auth.fullName }; state.tab = "services";
+  state.token = auth.token; state.user = { email: auth.email, fullName: auth.fullName, role: auth.role }; state.tab = "services";
   try { localStorage.setItem(STORE_KEY, JSON.stringify({ token: state.token, user: state.user })); } catch { /* ignore */ }
   render();
 }
@@ -86,6 +88,7 @@ function logout() {
   try { localStorage.removeItem(STORE_KEY); } catch { /* ignore */ }
   if ($("book-dialog").open) $("book-dialog").close();
   if ($("inv-dialog").open) $("inv-dialog").close();
+  if ($("svc-dialog").open) $("svc-dialog").close();
   render();
 }
 document.querySelectorAll(".tab-btn").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
@@ -143,17 +146,59 @@ $("auth-form").onsubmit = async (e) => {
 };
 
 // ---------- services ----------
+const isAdmin = () => state.user?.role === "Admin";
 async function loadServices() {
   $("services").innerHTML = skeletons();
-  state.services = await api("/services");
+  $("svc-add").hidden = !isAdmin();
+  state.services = await api(isAdmin() ? "/services?includeInactive=true" : "/services");
   $("services").innerHTML = state.services.map((s) => `
     <article class="card">
       <div class="svc-top"><h3>${esc(s.name)}</h3><span class="price">${money(s.price)}</span></div>
       <p class="muted">${esc(s.description || "")}</p>
-      <div class="svc-meta"><span class="chip">${s.durationMinutes >= 60 ? (s.durationMinutes / 60) + " h" : s.durationMinutes + " min"}</span>
-        <button class="btn" data-book="${s.id}" aria-label="Book ${esc(s.name)}">Book</button></div>
+      <div class="svc-meta"><span class="chip">${s.durationMinutes >= 60 ? (s.durationMinutes / 60) + " h" : s.durationMinutes + " min"}${s.isActive ? "" : " - inactive"}</span>
+        ${s.isActive ? `<button class="btn" data-book="${s.id}" aria-label="Book ${esc(s.name)}">Book</button>` : ""}</div>
+      ${isAdmin() ? `<div class="svc-meta"><button class="btn ghost sm" data-edit="${s.id}">Edit</button><button class="btn danger sm" data-del="${s.id}">Delete</button></div>` : ""}
     </article>`).join("") || empty("&#128197;", "No services available", "Check back soon.");
   $("services").querySelectorAll("[data-book]").forEach((b) => (b.onclick = () => openBooking(Number(b.dataset.book))));
+  $("services").querySelectorAll("[data-edit]").forEach((b) => (b.onclick = () => openServiceForm(Number(b.dataset.edit))));
+  $("services").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => deleteService(Number(b.dataset.del))));
+}
+
+// ---------- service management (Admin only; the API enforces the role, the UI just hides the controls) ----------
+let editingServiceId = null;
+function openServiceForm(id) {
+  const s = id ? state.services.find((x) => x.id === id) : null;
+  editingServiceId = s ? s.id : null;
+  $("svc-title").textContent = s ? "Edit service" : "Add service";
+  $("svc-name").value = s?.name ?? ""; $("svc-desc").value = s?.description ?? "";
+  $("svc-price").value = s?.price ?? ""; $("svc-duration").value = s?.durationMinutes ?? 60;
+  $("svc-active").checked = s ? s.isActive : true;
+  ["svc-name", "svc-price", "svc-duration"].forEach((f) => setFieldError(f, ""));
+  $("svc-dialog").showModal(); $("svc-name").focus();
+}
+$("svc-add").onclick = () => openServiceForm(null);
+$("svc-cancel").onclick = () => $("svc-dialog").close();
+$("svc-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const name = $("svc-name").value.trim(), price = Number($("svc-price").value), dur = Number($("svc-duration").value);
+  let ok = true;
+  ok = setFieldError("svc-name", name ? "" : "Name is required.") && ok;
+  ok = setFieldError("svc-price", $("svc-price").value !== "" && price >= 0 ? "" : "Enter a price of 0 or more.") && ok;
+  ok = setFieldError("svc-duration", dur >= 5 && dur <= 1440 ? "" : "Duration must be 5-1440 minutes.") && ok;
+  if (!ok) return;
+  const body = { name, description: $("svc-desc").value.trim() || null, price, durationMinutes: dur, isActive: $("svc-active").checked };
+  try {
+    await withBusy($("svc-submit"), () => api(editingServiceId ? `/services/${editingServiceId}` : "/services", { method: editingServiceId ? "PUT" : "POST", body }));
+    $("svc-dialog").close();
+    toast(name, "success", editingServiceId ? "Service updated" : "Service created");
+    loadServices().catch(errorToast);
+  } catch (err) { errorToast(err); }
+};
+async function deleteService(id) {
+  const s = state.services.find((x) => x.id === id);
+  if (!s || !confirm(`Delete "${s.name}"? This cannot be undone.`)) return;
+  try { await api(`/services/${id}`, { method: "DELETE" }); toast(s.name, "info", "Service deleted"); loadServices().catch(errorToast); }
+  catch (err) { errorToast(err); }
 }
 
 // ---------- booking dialog ----------
