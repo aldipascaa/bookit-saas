@@ -169,6 +169,31 @@ public class BookingApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Cancelling_frees_slot_and_cancelled_booking_cannot_be_invoiced()
+    {
+        var (c, _) = await _f.NewUserClientAsync();
+        var start = DateTime.UtcNow.Date.AddDays(50).AddHours(11);
+        var b = (await (await c.PostAsJsonAsync("/api/bookings", new { serviceId = 3, startTime = start })).Content.ReadFromJsonAsync<BookingResp>())!;
+        Assert.Equal(HttpStatusCode.Conflict, (await c.PostAsJsonAsync("/api/bookings", new { serviceId = 3, startTime = start })).StatusCode);
+
+        var cancel = await c.PostAsync($"/api/bookings/{b.Id}/cancel", null);
+        Assert.Equal("Cancelled", (await cancel.Content.ReadFromJsonAsync<BookingResp>())!.Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsync($"/api/bookings/{b.Id}/invoice", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await c.PostAsJsonAsync("/api/bookings", new { serviceId = 3, startTime = start })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Paying_twice_is_409_and_unknown_invoice_is_404()
+    {
+        var (c, _) = await _f.NewUserClientAsync();
+        var b = (await (await c.PostAsJsonAsync("/api/bookings", new { serviceId = 1, startTime = DateTime.UtcNow.Date.AddDays(60).AddHours(9) })).Content.ReadFromJsonAsync<BookingResp>())!;
+        var inv = (await (await c.PostAsync($"/api/bookings/{b.Id}/invoice", null)).Content.ReadFromJsonAsync<InvoiceResp>())!;
+        Assert.Equal(HttpStatusCode.OK, (await c.PostAsJsonAsync($"/api/invoices/{inv.Id}/pay", new { succeed = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await c.PostAsJsonAsync($"/api/invoices/{inv.Id}/pay", new { succeed = true })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await c.GetAsync("/api/invoices/99999")).StatusCode);
+    }
+
+    [Fact]
     public async Task Users_cannot_see_each_others_bookings()
     {
         var (a, _) = await _f.NewUserClientAsync();
