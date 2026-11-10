@@ -206,10 +206,72 @@ function updateEnd() {
   const v = $("book-start").value, s = state.service;
   const d = v ? new Date(v) : null;
   $("book-end").textContent = d && !isNaN(d) && s ? `Ends at ${fmtTime(new Date(d.getTime() + s.durationMinutes * 60000))} (${s.durationMinutes} min)` : "";
+  renderBusy();
+}
+
+// Availability: taken time ranges of the chosen service on the chosen local day.
+const busy = { key: "", slots: [], seq: 0 };
+const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function selectedRange() {
+  const v = $("book-start").value, s = state.service;
+  const d = v ? new Date(v) : null;
+  return d && !isNaN(d) && s ? { start: d, end: new Date(d.getTime() + s.durationMinutes * 60000) } : null;
+}
+function clashes() {
+  const r = selectedRange();
+  return r ? busy.slots.filter((b) => b.start < r.end && r.start < b.end) : [];
+}
+function renderBusy() {
+  const r = selectedRange(), el = $("book-busy");
+  if (!r) { el.textContent = ""; return; }
+  const key = `${state.service.id}|${dayKey(r.start)}`;
+  if (key !== busy.key) { loadBusy(key, r.start); return; }
+  if (!busy.slots.length) { el.innerHTML = `<span class="free">No other bookings that day - any time works.</span>`; return; }
+  const hit = new Set(clashes());
+  el.innerHTML = `Already taken that day:<div class="busy-list">${busy.slots.map((b) =>
+    `<span class="chip${hit.has(b) ? " clash" : ""}">${fmtTime(b.start)} &ndash; ${fmtTime(b.end)}</span>`).join("")}</div>`;
+}
+async function loadBusy(key, day) {
+  const seq = ++busy.seq;
+  const from = new Date(day); from.setHours(0, 0, 0, 0);
+  const to = new Date(from); to.setDate(to.getDate() + 1);
+  $("book-busy").textContent = "Checking availability...";
+  try {
+    const rows = await api(`/bookings/busy?serviceId=${state.service.id}&from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`);
+    if (seq !== busy.seq) return; // a newer request superseded this one
+    const own = state.reschedule;
+    busy.slots = rows.map((x) => ({ start: new Date(x.startTime), end: new Date(x.endTime) }))
+      .filter((b) => !(own && b.start.getTime() === new Date(own.startTime).getTime() && b.end.getTime() === new Date(own.endTime).getTime()));
+    busy.key = key;
+    renderBusy();
+  } catch { if (seq === busy.seq) $("book-busy").textContent = ""; } // availability is a hint; booking still validates server-side
+}
+
+function openReschedule(b) {
+  state.service = state.services.find((s) => s.id === b.serviceId)
+    || { id: b.serviceId, name: b.serviceName, price: null, durationMinutes: Math.round((new Date(b.endTime) - new Date(b.startTime)) / 60000) };
+  state.reschedule = b;
+  busy.key = "";
+  $("book-title").textContent = "Reschedule " + b.serviceName;
+  $("book-summary").textContent = `Currently ${fmtDT(b.startTime)}`;
+  const now = new Date(); now.setSeconds(0, 0);
+  now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15);
+  $("book-start").min = toLocalInput(now);
+  $("book-start").value = toLocalInput(new Date(b.startTime));
+  $("book-notes-field").hidden = true;
+  $("book-submit").textContent = "Save new time";
+  setFieldError("book-start", ""); $("book-form-err").textContent = "";
+  updateEnd();
+  $("book-dialog").showModal();
+  $("book-start").focus();
 }
 function openBooking(id) {
   state.service = state.services.find((s) => s.id === id);
   if (!state.service) return;
+  state.reschedule = null;
+  busy.key = "";
+  $("book-notes-field").hidden = false;
+  $("book-submit").textContent = "Confirm booking";
   $("book-title").textContent = "Book " + state.service.name;
   $("book-summary").textContent = `${money(state.service.price)} - ${state.service.durationMinutes} minutes`;
   const now = new Date(); now.setSeconds(0, 0);
@@ -231,13 +293,17 @@ $("book-form").onsubmit = async (e) => {
   if (!v) { setFieldError("book-start", "Choose a date and time."); $("book-start").focus(); return; }
   const d = new Date(v);
   if (isNaN(d) || d <= new Date()) { setFieldError("book-start", "Pick a time in the future."); $("book-start").focus(); return; }
+  if (clashes().length) { $("book-form-err").textContent = "That time overlaps a slot that is already taken. Please choose another time."; $("book-start").focus(); return; }
+  const moving = state.reschedule;
   try {
-    await withBusy($("book-submit"), () => api("/bookings", { method: "POST", body: { serviceId: state.service.id, startTime: d.toISOString(), notes: $("book-notes").value.trim() || null } }));
+    await withBusy($("book-submit"), () => moving
+      ? api(`/bookings/${moving.id}`, { method: "PUT", body: { startTime: d.toISOString() } })
+      : api("/bookings", { method: "POST", body: { serviceId: state.service.id, startTime: d.toISOString(), notes: $("book-notes").value.trim() || null } }));
     $("book-dialog").close();
-    toast(`${state.service.name} on ${fmtDT(d)}`, "success", "Booking confirmed");
+    toast(`${state.service.name} on ${fmtDT(d)}`, "success", moving ? "Booking rescheduled" : "Booking confirmed");
     showTab("bookings");
   } catch (err) {
-    if (err.status === 409) { $("book-form-err").textContent = "Sorry, that slot overlaps an existing booking. Please choose another time."; errorToast(err); }
+    if (err.status === 409) { $("book-form-err").textContent = "Sorry, that slot overlaps an existing booking. Please choose another time."; busy.key = ""; renderBusy(); errorToast(err); }
     else if (err.status === 400) setFieldError("book-start", err.message);
     else errorToast(err);
   }
@@ -257,9 +323,14 @@ async function loadBookings() {
         ${b.status === "Cancelled" ? "" : b.invoiceId
           ? `<button class="btn ghost sm" data-viewinv="${b.invoiceId}">View invoice</button>`
           : `<button class="btn sm" data-invoice="${b.id}">Create invoice</button>`}
+        ${(b.status === "Confirmed" || b.status === "Pending") && new Date(b.startTime) > new Date() ? `<button class="btn ghost sm" data-resched="${b.id}">Reschedule</button>` : ""}
         ${b.status === "Confirmed" || b.status === "Pending" ? `<button class="btn danger sm" data-cancel="${b.id}">Cancel</button>` : ""}
       </div>
     </article>`).join("") || empty("&#128466;", "No bookings yet", "Head to Services to book your first appointment.");
+  $("bookings").querySelectorAll("[data-resched]").forEach((btn) => (btn.onclick = () => {
+    const b = items.find((x) => x.id === Number(btn.dataset.resched));
+    if (b) openReschedule(b);
+  }));
   $("bookings").querySelectorAll("[data-invoice]").forEach((b) => (b.onclick = async () => {
     try { const inv = await withBusy(b, () => api(`/bookings/${b.dataset.invoice}/invoice`, { method: "POST" })); toast(inv.number, "success", "Invoice created"); showTab("invoices"); }
     catch (err) { errorToast(err); }

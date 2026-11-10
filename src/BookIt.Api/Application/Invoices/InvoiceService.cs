@@ -44,6 +44,8 @@ public class InvoiceService(IAppDbContext db, TimeProvider clock, ILogger<Invoic
     {
         var existing = await Find(customerId, id, ct);
         if (existing.IsPaid) throw new ConflictException("Invoice is already paid.");
+        if (await db.Bookings.AnyAsync(b => b.Id == existing.BookingId && b.Status == BookingStatus.Cancelled, ct))
+            throw new BusinessRuleException("The booking for this invoice was cancelled; it can no longer be paid.");
         if (!succeed)
         {
             log.LogInformation("Mock payment declined for invoice {InvoiceId}", id);

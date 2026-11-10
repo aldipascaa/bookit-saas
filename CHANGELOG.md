@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/), versioning follows [SemVer](https://semver.org/).
 
+## [1.2.0] - 2026-11-10
+
+### Added
+- **Availability in the booking dialog.** `GET /api/bookings/busy?serviceId=&from=&to=` returns the taken time
+  ranges of a service (times only, never who booked; range capped at 31 days). The dialog lists the slots already
+  taken on the chosen day, highlights a clash and blocks the submit before the server has to answer 409.
+- **Reschedule from the UI.** "My bookings" has a Reschedule button that reuses the booking dialog and calls the
+  existing `PUT /api/bookings/{id}`.
+- GitHub Actions workflow that builds and runs the test suite on every push and pull request.
+
+### Fixed
+- A booking whose invoice is already paid could still be cancelled, leaving a paid invoice for a freed slot. It
+  now returns 409.
+- The unpaid invoice of a cancelled booking could still be paid. It now returns 400.
+- A completed booking could be cancelled (now 400); cancelling an already cancelled booking is an idempotent 200.
+
 ## [1.1.0] - 2026-11-08
 
 Architecture review release; see [ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md) for findings and rationale.

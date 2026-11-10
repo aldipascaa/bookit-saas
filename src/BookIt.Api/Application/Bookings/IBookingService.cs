@@ -10,5 +10,7 @@ public interface IBookingService
     Task<BookingDto> CreateAsync(int customerId, CreateBookingRequest request, CancellationToken ct = default);
     Task<BookingDto> RescheduleAsync(int customerId, int id, RescheduleRequest request, CancellationToken ct = default);
     Task<BookingDto> CancelAsync(int customerId, int id, CancellationToken ct = default);
+    /// <summary>Taken time ranges of a service (any customer) inside [from, to). Exposes times only.</summary>
+    Task<IReadOnlyList<BusySlotDto>> BusyAsync(int serviceId, DateTime from, DateTime to, CancellationToken ct = default);
     Task DeleteAsync(int customerId, int id, CancellationToken ct = default);
 }

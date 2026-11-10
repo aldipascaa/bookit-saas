@@ -78,8 +78,9 @@
         <input id="book-start" type="datetime-local" step="900" required>
         <p class="hint-line" id="book-end"></p>
         <p class="err" id="book-start-err" role="alert"></p>
+        <div class="busy" id="book-busy" aria-live="polite"></div>
       </div>
-      <div class="field">
+      <div class="field" id="book-notes-field">
         <label for="book-notes">Notes (optional)</label>
         <input id="book-notes" maxlength="200">
       </div>

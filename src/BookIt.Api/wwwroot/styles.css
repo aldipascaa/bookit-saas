@@ -71,6 +71,10 @@ input[aria-invalid="true"] { border-color: var(--bad); }
 .err { color: var(--bad); font-size: .82rem; margin: 5px 0 0; min-height: 0; } .err:empty { display: none; }
 .form-err { background: var(--bad-soft); padding: 8px 12px; border-radius: 8px; }
 .hint-line { color: var(--muted); font-size: .82rem; margin: 5px 0 0; }
+.busy { margin-top: 10px; font-size: .82rem; color: var(--muted); } .busy:empty { display: none; }
+.busy .busy-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.busy .chip.clash { background: var(--bad-soft); color: var(--bad); }
+.busy .free { color: var(--ok); font-weight: 600; }
 
 .svc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .price { font-size: 1.35rem; font-weight: 700; white-space: nowrap; }

@@ -2,7 +2,7 @@
 
 A small full-stack SaaS for **booking appointments and invoicing customers**, built with ASP.NET Core 8, EF Core (SQLite), JWT auth and a no-build vanilla JS frontend.
 
-Current version: **1.1.0** (see [CHANGELOG.md](CHANGELOG.md)).
+Current version: **1.2.0** (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Features
 
@@ -154,10 +154,11 @@ All endpoints are under `/api`. Bearer token required unless noted. Errors are `
 | PUT | `/services/{id}` | Admin | Update service |
 | DELETE | `/services/{id}` | Admin | Delete service (409 if it has bookings) |
 | GET | `/bookings` | user | List my bookings |
+| GET | `/bookings/busy?serviceId=&from=&to=` | user | Taken time ranges of a service (max 31 days); times only, no identities |
 | GET | `/bookings/{id}` | user | Get one of my bookings |
 | POST | `/bookings` | user | Create booking `{serviceId, startTime, notes}`; 409 on overlap |
 | PUT | `/bookings/{id}` | user | Reschedule `{startTime}`; 409 on overlap |
-| POST | `/bookings/{id}/cancel` | user | Cancel (frees the slot) |
+| POST | `/bookings/{id}/cancel` | user | Cancel (frees the slot); idempotent; 409 once paid, 400 if completed |
 | DELETE | `/bookings/{id}` | user | Delete (not allowed once invoiced) |
 | POST | `/bookings/{id}/invoice` | user | Generate invoice from booking |
 | GET | `/invoices` | user | List my invoices |

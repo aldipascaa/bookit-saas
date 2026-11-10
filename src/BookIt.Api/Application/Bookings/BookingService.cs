@@ -71,11 +71,38 @@ public class BookingService(IAppDbContext db, TimeProvider clock, ILogger<Bookin
     public async Task<BookingDto> CancelAsync(int customerId, int id, CancellationToken ct = default)
     {
         var b = await Find(customerId, id, ct);
+        if (b.Status == BookingStatus.Cancelled) return BookingDto.From(b); // idempotent
+        if (b.Status == BookingStatus.Completed) throw new BusinessRuleException("A Completed booking cannot be cancelled.");
+        if (b.Invoice is { IsPaid: true })
+            throw new ConflictException("This booking is already paid and cannot be cancelled (refunds are not supported).");
         b.Status = BookingStatus.Cancelled;
         await db.SaveChangesAsync(ct);
         log.LogInformation("Booking {BookingId} cancelled", b.Id);
         return BookingDto.From(b);
     }
+
+    /// <summary>
+    /// Taken time ranges of a service inside [from, to), so a client can show availability before booking.
+    /// Only start/end are exposed - never who booked.
+    /// </summary>
+    public async Task<IReadOnlyList<BusySlotDto>> BusyAsync(int serviceId, DateTime from, DateTime to, CancellationToken ct = default)
+    {
+        var start = UtcTime.Normalize(from);
+        var end = UtcTime.Normalize(to);
+        if (end <= start) throw new BusinessRuleException("'to' must be after 'from'.");
+        if (end - start > MaxBusyRange) throw new BusinessRuleException($"The range may span at most {MaxBusyRange.TotalDays:0} days.");
+        if (!await db.Services.AnyAsync(s => s.Id == serviceId, ct)) throw new NotFoundException("Service not found.");
+
+        var rows = await db.Bookings.AsNoTracking()
+            .Where(b => b.ServiceId == serviceId && b.Status != BookingStatus.Cancelled && b.StartTime < end && start < b.EndTime)
+            .OrderBy(b => b.StartTime)
+            .Select(b => new { b.StartTime, b.EndTime })
+            .ToListAsync(ct);
+        return rows.Select(r => new BusySlotDto(DateTime.SpecifyKind(r.StartTime, DateTimeKind.Utc),
+            DateTime.SpecifyKind(r.EndTime, DateTimeKind.Utc))).ToList();
+    }
+
+    private static readonly TimeSpan MaxBusyRange = TimeSpan.FromDays(31);
 
     public async Task DeleteAsync(int customerId, int id, CancellationToken ct = default)
     {

@@ -13,6 +13,11 @@ public class BookingsController(IBookingService bookings, IInvoiceService invoic
     [HttpGet]
     public async Task<IReadOnlyList<BookingDto>> List(CancellationToken ct) => await bookings.ListAsync(CurrentUserId, ct);
 
+    /// <summary>Taken time ranges of a service between <c>from</c> and <c>to</c> (max 31 days). Times only, no identities.</summary>
+    [HttpGet("busy")]
+    public async Task<IReadOnlyList<BusySlotDto>> Busy([FromQuery] int serviceId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken ct) =>
+        await bookings.BusyAsync(serviceId, from, to, ct);
+
     [HttpGet("{id:int}")]
     public async Task<BookingDto> Get(int id, CancellationToken ct) => await bookings.GetAsync(CurrentUserId, id, ct);
 
